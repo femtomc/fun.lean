@@ -84,11 +84,13 @@ def eval (env : Environment Value) (expr : Expr) : Except String HValue :=
   match expr with
   | Expr.Number n => pure $ HValue.HVal $ (Value.VInt n)
   | Expr.Variable v => pure $ find env v
-  | Expr.If e1 e2 e3 => match (eval env e1) with
-    | Value.VBool True => pure $ eval env e2
-    | Value.VBool False => pure $ eval env e3
-  | Expr.Apply f es => let ev := fun e1 => eval env e1; pure $ apply (eval f env) (map ev es)
-  | Expr.Lambda xs e1 => abstract xs e1 env
+  | Expr.If e1 e2 e3 => 
+    do let v <- eval env e1
+       let q <- unwrap v
+        match q with
+          | Value.VBool true => eval env e2
+          | Value.VBool false => eval env e3
+          | _ => Except.error "(Expr.If) Evaluated the branch condition to non-Boolean."
 
 /-
 Theorems
