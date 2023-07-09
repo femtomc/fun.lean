@@ -56,19 +56,21 @@ def make_env (v : List (Prod String HValue)) : Environment HValue :=
     | [] => empty_env
     | α :: β => Environment.ECons α (make_env β)
 
-def lifted_map (f : α -> Except String γ) (v : List α) : Except String (List γ) := 
+def lifted_map (f : α -> Except β γ) (v : List α) : Except β (List γ) := 
   match v with
     | [] => pure []
-    | (x :: xs) => let lifted_cons := fun y: α => 
+    | (x :: xs) => let lifted_cons := fun y => 
       match (lifted_map f xs) with
         | Except.ok u => pure (y :: u)
         | Except.error e => Except.error e; 
-      (pure x) >>= lifted_cons
+      (f x) >>= lifted_cons
 
 -- (Except monad to propagate error)
 def apply (e : HValue) (args : List HValue) : Except String HValue :=
   match e with
     | HValue.HVal _ => Except.error "HVal provided to `apply`, expected `HFunc`"
+    -- TODO: instead of defining `lifted_map`, what's the monadic
+    -- idiom?
     | HValue.HFunc f => HValue.HVal <$> (f <$> lifted_map unwrap args)
 
 def eval (env : Environment Value) (expr : Expr) : Except String HValue :=
