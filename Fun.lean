@@ -27,6 +27,7 @@ inductive Value where
   | VInt : Int -> Value -- the type of ints
   | VBool : Bool -> Value -- the type of bools
   | VCons : Value -> Value -> Value -- the type of lists
+deriving Repr
 
 /-
 A separate inductive type is required due to occurrence failure (if we attempted to define Value.VFunc : (List Value -> Value) -> Value), the typechecker throws:
@@ -37,6 +38,12 @@ TODO: investigate this further.
 inductive HValue where -- HValue essentially stands for (higher-order abstract syntax) value (referring to our encoding of lambdas using Lean4 lambdas)
   | HVal : Value -> HValue
   | HFunc : (List Value -> Value) -> HValue -- Lean4 encoding of lambda values
+
+instance : Repr HValue where
+  reprPrec :=  fun h =>
+    match h with
+    | HValue.HVal v => reprPrec v
+    | HValue.HFunc _ => reprPrec "<lean lambda>"
 
 -- Take an HValue which represents a Value, and return a Value.
 def unwrap (hv : HValue) : Except String Value :=
